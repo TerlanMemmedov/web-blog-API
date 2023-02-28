@@ -1,10 +1,10 @@
 # web-blog
 
-**This is web-blog api form me :)
+**This is web-blog api :)
 <br />
-You can look at the articles withour authorization 
+In the program everyone can look at the articles without authorization 
 <br />
-But if you want to post new article, you need to login
+But if someone want to post new article, write comment, - need to login
 <br />
 <br />
 New Service - Timed Hosted Service added for doing background tasks with chosen time (time for interval will be 1 or 3 days)
