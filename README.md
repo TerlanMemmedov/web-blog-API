@@ -7,7 +7,7 @@ In the program everyone can look at the articles without authorization
 But if someone want to post new article, write comment, - need to login
 <br />
 <br />
-New Service - Timed Hosted Service added for doing background tasks with chosen time (time for interval will be 1 or 3 days)
+New Service - Timed Hosted Service added for doing background tasks within chosen time (time for interval will be 1 or 3 days)
 <br />
 Redis part is in testing (it is working, but not added for all sections)
 <br />
