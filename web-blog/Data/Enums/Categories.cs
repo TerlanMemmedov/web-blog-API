@@ -1,5 +1,6 @@
 ﻿namespace web_blog.Data.Enums
 {
+    //Will change to the database and will work on redis cache
     public enum Categories
     {
         Arts,

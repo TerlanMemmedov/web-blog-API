@@ -12,6 +12,8 @@ using System.IdentityModel.Tokens.Jwt;
 using web_blog.Data;
 using web_blog.Data.Models;
 using web_blog.Data.Services;
+using web_blog.TimedTasks;
+using static web_blog.TimedTasks.TimedHostedService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,12 @@ builder.Services.AddTransient<AuthenticationService>();
 builder.Services.AddTransient<CommentsService>();
 builder.Services.AddTransient<EmojisService>();
 builder.Services.AddTransient<ReportedArticlesService>();
+
+//For timing Tasks
+builder.Services.AddScoped<IScopedProcessingService, ScopedProcessingService>();
+builder.Services.AddHostedService<TimedHostedService>();
+builder.Services.AddHostedService<ConsumeScopedServiceHostedService>();
+//
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
@@ -96,6 +104,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddMvc().AddSessionStateTempDataProvider();
 builder.Services.AddSession();
+builder.Services.AddDistributedRedisCache(options =>
+{
+    options.Configuration = "localhost:6379";
+    options.InstanceName = "testOne";
+});
 builder.Services.AddDistributedMemoryCache();
 
 var app = builder.Build();

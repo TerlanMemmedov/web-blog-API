@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
 using System.Xml.Linq;
 using web_blog.Data.Enums;
 using web_blog.Data.Models;
@@ -9,12 +11,42 @@ namespace web_blog.Data.Services
     public class ArticlesService
     {
         private readonly AppDbContext _context;
+        private readonly IDistributedCache _distributedCache;
         //private readonly ArticlesSortingService _articlesSortingService;
 
-        public ArticlesService(AppDbContext context)
+        public ArticlesService(AppDbContext context, IDistributedCache distributedCache)
         {
             _context = context;
+            _distributedCache = distributedCache;
         }
+
+
+        //Testing redis 
+        public async Task<List<Article>> TestRedisAllInfoArticles()
+        {
+            //var articles = await _context.Articles.ToListAsync();
+
+            var articles = new List<Article>();
+
+            if (String.IsNullOrEmpty(_distributedCache.GetString("articles")))
+            {
+                articles = await _context.Articles.ToListAsync();
+
+                var articlesJsonC = JsonConvert.SerializeObject(articles);
+
+                _distributedCache.SetString("articles", articlesJsonC);
+
+            }
+            else
+            {
+                var objFromCache = _distributedCache.GetString("articles");
+                articles = JsonConvert.DeserializeObject<List<Article>>(objFromCache);
+            }
+
+            return articles;
+        }
+
+
 
         //this is normal so we ordering by date added new ones top
         public async Task<List<ArticleWithAuthorComEmoVM>> GetAllArticles()
@@ -102,6 +134,7 @@ namespace web_blog.Data.Services
             await _context.SaveChangesAsync();
         }
 
+
         //using for update and delete functions
         public async Task<Article> GetArtcileById(int id)
         {
@@ -182,6 +215,22 @@ namespace web_blog.Data.Services
             {
                 _context.Articles.Remove(article);
                 await _context.SaveChangesAsync();
+            }
+        }
+
+        // Works //Will change to delete the articles and reportes with 
+        // the added column (deleted or not) with timely. 
+        public async Task DelTestTimer() 
+        {
+            var articles = await _context.Articles.Where(n => n.Categories == Categories.Fitness).ToListAsync();
+
+            if (articles != null)
+            {
+                foreach (var article in articles) 
+                {
+                    _context.Articles.Remove(article);
+                    await _context.SaveChangesAsync();
+                }
             }
         }
     }

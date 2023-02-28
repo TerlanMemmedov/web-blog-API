@@ -34,6 +34,22 @@ namespace web_blog.Data.Services
             await _context.SaveChangesAsync();
         }
 
+        public async Task<Comment> UpdateComment(int id, CommentVM commentVM, string userId)
+        {
+            var comment = await _context.Comments.FirstOrDefaultAsync(n => n.Id == id);
+
+            if (comment != null) 
+            {
+                if (comment.UserId == userId)
+                {
+                    comment.CommentText = commentVM.Text;
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+            return comment;
+        }
+
         public async Task DeleteComment(string userId, int commentId, bool AuthorOrNot)
         {
             var comment = await _context.Comments.FirstOrDefaultAsync(n => n.Id == commentId);

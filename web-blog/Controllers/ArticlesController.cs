@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Serialization;
 using System.Net;
+using web_blog.Data.Enums;
+using web_blog.Data.Errors;
 using web_blog.Data.Services;
 using web_blog.Data.ViewModels;
 using web_blog.Data.ViewModels.Authentication;
@@ -53,6 +56,15 @@ namespace web_blog.Controllers
         //}
 
 
+        //Testing Redis
+        [HttpGet("thisIs/Redis")]
+        public async Task<IActionResult> GetTaskRedis()
+        {
+            var articles = await _service.TestRedisAllInfoArticles();
+
+            return Ok(articles);
+        }
+
 
 
         //all can
@@ -63,7 +75,9 @@ namespace web_blog.Controllers
 
             if (article is null)
             {
-                return NotFound("Article couldn't found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode , ErrorNamesForMessages.ArticleNotFound));
+
+                //return NotFound("Article couldn't found");
             }
 
             return Ok(article);
@@ -79,7 +93,8 @@ namespace web_blog.Controllers
 
             if (userId is null)
             {
-                return BadRequest("Problem with the user");
+                //return BadRequest("Problem with the user");
+                return BadRequest(ErrorFormat.GetErrorJsonType(BadRequest().StatusCode, ErrorNamesForMessages.ProblemWithUser));
             }
 
             if (!ModelState.IsValid)
@@ -91,7 +106,7 @@ namespace web_blog.Controllers
 
             if (postedArticle is null)
             {
-                return BadRequest("Problem with article. Maybe the author not found");
+                return Conflict(ErrorFormat.GetErrorJsonType(Conflict().StatusCode, ErrorNamesForMessages.ArticleCantPosted));
             }
 
             return Ok(postedArticle);
@@ -115,7 +130,7 @@ namespace web_blog.Controllers
             var _article = await _service.GetArtcileById(articleId);
             if (_article is null)
             {
-                return NotFound("The article for update couldn't found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode , ErrorNamesForMessages.ArticleNotFound));
             }
 
             var updatedarticle = await _service.UpdateArticle(articleId, userid , article);
@@ -132,13 +147,13 @@ namespace web_blog.Controllers
 
             if (userId is null)
             {
-                return BadRequest("Problem with User");
+                return BadRequest(ErrorFormat.GetErrorJsonType(BadRequest().StatusCode, ErrorNamesForMessages.ProblemWithUser));
             }
 
             var article = await _service.GetArtcileById(articleId);
             if (article is null)
             {
-                return NotFound("The article for deletion couldn't found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.ArticleNotFound));
             }
 
             await _service.DeleteArticle(userId, articleId);
@@ -156,7 +171,7 @@ namespace web_blog.Controllers
 
             if (article is null)
             {
-                return NotFound("The article for deletion couldn't found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.ArticleNotFound));
             }
 
             await _service.DeleteArticleByAdmin(articleId);
@@ -171,7 +186,7 @@ namespace web_blog.Controllers
             var userId = Request.Cookies["userId"];
 
             if (userId is null)
-                return BadRequest("Problem with User");
+                return BadRequest(ErrorFormat.GetErrorJsonType(BadRequest().StatusCode, ErrorNamesForMessages.ProblemWithUser));
 
             if (!ModelState.IsValid)
             {
@@ -181,7 +196,7 @@ namespace web_blog.Controllers
             var article = await _service.GetArtcileById(id);
 
             if (article is null)
-                return NotFound("Article couldn't found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.ArticleNotFound));
 
             await _commentsService.PostComment(id, comment, userId);
 
@@ -196,7 +211,7 @@ namespace web_blog.Controllers
             var userId = Request.Cookies["userId"];
 
             if (userId is null)
-                return BadRequest("Problem with User");
+                return BadRequest(ErrorFormat.GetErrorJsonType(BadRequest().StatusCode, ErrorNamesForMessages.ProblemWithUser));
 
             if (!ModelState.IsValid)
             {
@@ -206,12 +221,41 @@ namespace web_blog.Controllers
             var article = await _service.GetArtcileById(id);
 
             if (article is null)
-                return NotFound("Article couldn't found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.ArticleNotFound));
 
             await _emojisService.PostEmoji(id, emoji, userId);
 
             return NoContent(); //"Emoji posted, updated or deleted for the article"
         }
+
+        //the author of comment can edit his comment
+        [HttpPut("{id}/edit-comment/{commentId}")]
+        [Authorize(Roles = UserRoles.User + "," + UserRoles.Admin)]
+        public async Task<IActionResult> UpdateComment(int id, int commentId, [FromBody] CommentVM commentVM)
+        {
+            var userId = Request.Cookies["userId"];
+
+            if (userId is null)
+                return BadRequest(ErrorFormat.GetErrorJsonType(BadRequest().StatusCode, ErrorNamesForMessages.ProblemWithUser));
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState.ValidationState);
+
+            var article = await _service.GetArtcileById(id);
+
+            if (article is null)
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.ArticleNotFound));
+
+            var updatedComment = await _commentsService.UpdateComment(commentId, commentVM, userId);
+
+            if (updatedComment == null)
+            {
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.CommentNotFound));
+            }
+
+            return Ok(updatedComment);
+        }
+
 
 
         //the author of comment can delete his comment
@@ -224,14 +268,14 @@ namespace web_blog.Controllers
 
             if (userId is null)
             {
-                return BadRequest("Problem with User");
+                return BadRequest(ErrorFormat.GetErrorJsonType(BadRequest().StatusCode, ErrorNamesForMessages.ProblemWithUser));
             }
 
             var article = await _service.GetArtcileById(id);
 
             if (article is null)
             {
-                return NotFound("Article not found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.ArticleNotFound));
             }
 
             bool authorOrNot = false;
@@ -257,17 +301,17 @@ namespace web_blog.Controllers
 
             if (userId is null)
             {
-                return BadRequest("Problem with User");
+                return BadRequest(ErrorFormat.GetErrorJsonType(BadRequest().StatusCode, ErrorNamesForMessages.ProblemWithUser));
             }
 
             if (!ModelState.IsValid)
             {
-                return BadRequest("Write the report message");
+                return BadRequest(ModelState.ValidationState);
             }
 
             if (article is null)
             {
-                return NotFound("Article couln't found");
+                return NotFound(ErrorFormat.GetErrorJsonType(NotFound().StatusCode, ErrorNamesForMessages.ArticleNotFound));
             }
 
             await _reportedArticlesService.ReportArticle(id, userId, reportedArticleVM);
