@@ -14,12 +14,15 @@ namespace web_blog.Controllers
     {
         private readonly ReportedArticlesService _reportedArticlesService;
         private readonly ArticlesService _articlesService;
+        private readonly AuthenticationService _authenticationService;
 
         public AdminController(ReportedArticlesService reportedArticlesService, 
-            ArticlesService articlesService)
+            ArticlesService articlesService,
+            AuthenticationService authenticationService)
         {
             _reportedArticlesService = reportedArticlesService;
             _articlesService = articlesService;
+            _authenticationService = authenticationService;
         }
 
         //Getting reported articles
@@ -36,7 +39,7 @@ namespace web_blog.Controllers
             return Ok(reportedArticles);
         }
 
-        [HttpGet("reported-article/{id}")]
+        [HttpGet("reported-articles/{id}")]
         public async Task<IActionResult> GetReportedArticles(int id)
         {
             var reportedArticle = await _reportedArticlesService.GetReportedArticleById(id);
@@ -49,7 +52,7 @@ namespace web_blog.Controllers
             return Ok(reportedArticle);
         }
 
-        [HttpPost("reported-article/{id}/accept")]
+        [HttpPost("reported-articles/{id}/accept")]
         public async Task<IActionResult> AcceptReport(int id)
         {
             //change the report status to accepted: code 1/
@@ -57,16 +60,29 @@ namespace web_blog.Controllers
 
             await _reportedArticlesService.ChangeStatus(id, statusMessage);
 
-            //delete article with given id
+            //delete article with given id ??? changed to the time deleting, not force delete
 
             int articleId = await _reportedArticlesService.GetArticleIdByReportId(id);
 
-            await _articlesService.DeleteArticleByAdmin(articleId);
+            //await _articlesService.DeleteArticleByAdmin(articleId);
 
-            return Ok("Report " + statusMessage + "\n" + "Article deleted");
+            //changed its column is deleted to true
+            await _articlesService.ChangeToDeleted(articleId);
+
+            string UserIdOfDeletedArticle = await _articlesService.GetUserIdThatAuthorOFArticleId(articleId);
+
+            //increase all and last reported in the user
+
+            if (UserIdOfDeletedArticle != null)
+            {
+                await _authenticationService.IncreaseAllAndLastOnes(UserIdOfDeletedArticle);
+            }
+
+
+            return Ok("Report " + statusMessage + "\n" + "Article will be deleted");
         }
 
-        [HttpPost("reported-article/{id}/decline")]
+        [HttpPost("reported-articles/{id}/decline")]
         public async Task<IActionResult> DeclineReport(int id)
         {
             //change the report status to accepted: code 1/

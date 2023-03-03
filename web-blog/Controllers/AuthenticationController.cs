@@ -110,9 +110,16 @@ namespace web_blog.Controllers
             {
                 if (await _userManager.CheckPasswordAsync(user, log.PassWord))
                 {
-                    var token = await GenerateToken(user);
+                    if (await _userManager.GetLockoutEnabledAsync(user)) //true if not blocked
+                    {
+                        var token = await GenerateToken(user);
 
-                    return Ok(token);
+                        return Ok(token);
+                    }
+                    else // false if account blocked
+                    {
+                        return BadRequest("Your profile has been blocked for 3 days !  I have to write a new error json type here");
+                    }
                 }
                 else
                 {

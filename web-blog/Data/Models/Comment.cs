@@ -16,6 +16,9 @@ namespace web_blog.Data.Models
         
         public DateTime DateAdded { get; set; } = DateTime.Now;
 
+        [DefaultValue(false)]
+        public bool IsDeleted { get; set; }
+
         //Relations 
 
 

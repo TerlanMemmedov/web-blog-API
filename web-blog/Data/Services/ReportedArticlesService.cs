@@ -74,6 +74,8 @@ namespace web_blog.Data.Services
                         {
                             report.Status = Enums.RStatus.accepted;
 
+                            report.IsDeleted = true;
+
                             await _context.SaveChangesAsync();
 
                             //burda her bir report sahibine email gondermek qebulla bagli
@@ -99,11 +101,13 @@ namespace web_blog.Data.Services
 
                         reportForArticleId.Status = Enums.RStatus.declined;
 
+                        //delete this report within the 3 days 
+                        reportForArticleId.IsDeleted = true;
+
                         await _context.SaveChangesAsync();
 
-                        //Email message to the user that their report declined
+                        //Email message to the user that their report declined ???
 
-                        //delete this report within the 3 days 
                     }
                 }
             }
