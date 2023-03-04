@@ -29,7 +29,7 @@ namespace web_blog.Controllers
         [HttpGet("reported-articles")]
         public async Task<IActionResult> GetReportedArticles()
         {
-            var reportedArticles = await _reportedArticlesService.GetAllReportedArticles();
+            var reportedArticles = await _reportedArticlesService.GetCheckingReportedArticles();
 
             if (reportedArticles.Count == 0 || reportedArticles == null)
             {
@@ -40,7 +40,7 @@ namespace web_blog.Controllers
         }
 
         [HttpGet("reported-articles/{id}")]
-        public async Task<IActionResult> GetReportedArticles(int id)
+        public async Task<IActionResult> GetReportedArticle(int id)
         {
             var reportedArticle = await _reportedArticlesService.GetReportedArticleById(id);
 
@@ -58,16 +58,16 @@ namespace web_blog.Controllers
             //change the report status to accepted: code 1/
             const string statusMessage = "accepted";
 
-            await _reportedArticlesService.ChangeStatus(id, statusMessage);
-
             //delete article with given id ??? changed to the time deleting, not force delete
 
             int articleId = await _reportedArticlesService.GetArticleIdByReportId(id);
 
-            //await _articlesService.DeleteArticleByAdmin(articleId);
-
             //changed its column is deleted to true
+            //await _articlesService.DeleteArticleByAdmin(articleId);
             await _articlesService.ChangeToDeleted(articleId);
+
+            await _reportedArticlesService.ChangeStatus(id, statusMessage);
+
 
             string UserIdOfDeletedArticle = await _articlesService.GetUserIdThatAuthorOFArticleId(articleId);
 
@@ -91,6 +91,46 @@ namespace web_blog.Controllers
             await _reportedArticlesService.ChangeStatus(id, statusMessage);
 
             return Ok("Report " + statusMessage);
+        }
+
+        [HttpGet("Users")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _authenticationService.GetUsers();
+
+            return Ok(users);
+        }
+
+        [HttpGet("Users/{id}")]
+        public async Task<IActionResult> GetUser(string id)
+        {
+            var user = await _authenticationService.GetUser(id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(user);
+        }
+
+
+        //blocks user for one month by admin
+        [HttpPost("Users/{id}/block")]
+        public async Task<IActionResult> BlockUser(string id)
+        {
+            await _authenticationService.BlockUser(id);
+
+            return Ok($"User with the {id} is blocked for one month");
+        }
+
+        //for unlock the user by admin
+        [HttpPost("Users/{id}/open-block")]
+        public async Task<IActionResult> OpenBlockUser(string id)
+        {
+            await _authenticationService.OpenBlockUser(id);
+
+            return Ok($"the user's block with {id} is unlocked");
         }
     }
 }

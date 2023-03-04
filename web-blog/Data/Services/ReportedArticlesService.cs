@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using web_blog.Data.Enums;
 using web_blog.Data.Models;
 using web_blog.Data.ViewModels;
 using web_blog.Data.ViewModels.Authentication;
@@ -37,16 +38,21 @@ namespace web_blog.Data.Services
             return reports;
         }
 
+        /// <summary>
+        /// if there are error about articleId in the reportedArticles can be here
+        /// and also look out for the model if want to go back change
+        /// </summary>
+        /// <param name="reportId"></param>
+        /// <returns></returns>
         public async Task<int> GetArticleIdByReportId(int reportId)
         {
             var reportForArticleId = await _context.ReportedArticles.FirstOrDefaultAsync(a => a.Id == reportId);
             var articleId = -1;
 
-            if (reportForArticleId != null)
+            if (reportForArticleId != null && reportForArticleId.ArticleId != null)
             {
-                articleId = reportForArticleId.ArticleId;
+                articleId = (int)reportForArticleId.ArticleId;
             }
-            
 
             return articleId;
         }
@@ -56,7 +62,7 @@ namespace web_blog.Data.Services
         public async Task ChangeStatus(int reportId, string statusMessage)
         {
             var reportForArticleId = await _context.ReportedArticles.FirstOrDefaultAsync(a => a.Id == reportId);
-            int articleId =await GetArticleIdByReportId(reportId);
+            int articleId = await GetArticleIdByReportId(reportId);
 
             if (articleId != null)
             {
@@ -72,23 +78,23 @@ namespace web_blog.Data.Services
                     {
                         foreach (var report in reportedOnes)
                         {
+                            //for preventing auto deletion in the same time with article
+                            report.ArticleId = null;
+
                             report.Status = Enums.RStatus.accepted;
 
                             report.IsDeleted = true;
 
                             await _context.SaveChangesAsync();
 
-                            //burda her bir report sahibine email gondermek qebulla bagli
+                            //burda her bir report sahibine notification gondermek qebulla bagli
                         }
 
-                        //Email message to the user that their report accepted
-
-                        //Sorry but can't wait for 3 days. Because it is all connected. So when article is 
-                        //deleted report will also deleted (all reports about this article)
+                        //Email message to the user that their report accepted or Notifications model is coming
 
                         //bu problemin helli ucun meqalenin de report qebul edildikden 3 gun sonra silinmesi 
-                        //lazimdir. Elave bir column elave edib orada deleted deyerini saxlayaraq, (silinecek vaxti
-                        //da saxlamaq olar) 3 gun erzinde silmek
+                        //lazimdir. Elave bir column elave edib orada deleted deyerini saxlayaraq
+                        //, (silinecek vaxtida saxlamaq olar) 3 gun erzinde silmek
                     }
                     else if (statusMessage == "declined")
                     {
@@ -99,6 +105,8 @@ namespace web_blog.Data.Services
                         //    await _context.SaveChangesAsync();
                         //}
 
+                        //for preventing auto deletion in the same time with article
+                        //reportForArticleId.ArticleId = null;
                         reportForArticleId.Status = Enums.RStatus.declined;
 
                         //delete this report within the 3 days 
@@ -106,7 +114,7 @@ namespace web_blog.Data.Services
 
                         await _context.SaveChangesAsync();
 
-                        //Email message to the user that their report declined ???
+                        //Notification message to the user that their report declined 
 
                     }
                 }
@@ -118,7 +126,46 @@ namespace web_blog.Data.Services
         {
             var reportedArticles = await _context.ReportedArticles.Where(z => z.UserId == userId)
                 .Select(n => new ReportedArticlesWithUsersVM
+                {
+                    ReportId = n.Id,
+                    User = n.User.UserName,
+                    ReportText = n.ReportText,
+                    Status = n.Status.ToString(),
+                    Article = new ArticleWithAuthorComEmoVM()
+                    {
+                        Id = n.Article.Id,
+                        Title = n.Article.Title,
+                        ArticleText = n.Article.ArticleText,
+                        Categories = n.Article.Categories.ToString(),
+                        NumberOfRead = n.Article.NumberOfRead,
+                        DateAdded = n.Article.DateAdded,
+                        //Author = article1.Author.NickName,
+                        User = n.Article.User.UserName,
+                        Comments = n.Article.Comments.Select(c => new CommentWArticleVM
+                        {
+                            CommentText = c.CommentText,
+                            DateAdded = c.DateAdded,
+                            User = c.User.UserName
+                        }).ToList(),
+                        Emojis = n.Article.Emojis.Select(e => new EmojiWArticleVM
+                        {
+                            EmojiTypes = e.EmojiTypes.ToString(),
+                            User = e.User.UserName
+                        }).ToList()
+                    }
+                }).ToListAsync();
+
+            return reportedArticles;
+        }
+
+
+        //For admin
+        //this is returning all the reported articles that without looking the status
+        public async Task<List<ReportedArticlesWithUsersVM>> GetAllReportedArticles()
+        {
+            var reportedArticles = await _context.ReportedArticles.Select(n => new ReportedArticlesWithUsersVM
             {
+                ReportId = n.Id,
                 User = n.User.UserName,
                 ReportText = n.ReportText,
                 Status = n.Status.ToString(),
@@ -149,12 +196,13 @@ namespace web_blog.Data.Services
             return reportedArticles;
         }
 
-
         //For admin
-        public async Task<List<ReportedArticlesWithUsersVM>> GetAllReportedArticles()
+        //this is returning all the reported articles that just checking status
+        public async Task<List<ReportedArticlesWithUsersVM>> GetCheckingReportedArticles()
         {
-            var reportedArticles = await _context.ReportedArticles.Select(n => new ReportedArticlesWithUsersVM
+            var reportedArticles = await _context.ReportedArticles.Where(k => k.Status == RStatus.checking).Select(n => new ReportedArticlesWithUsersVM
             {
+                ReportId = n.Id,
                 User = n.User.UserName,
                 ReportText = n.ReportText,
                 Status = n.Status.ToString(),
@@ -192,6 +240,7 @@ namespace web_blog.Data.Services
             var reportedArticle = await _context.ReportedArticles.Where(a => a.Id == id)
                 .Select(n => new ReportedArticlesWithUsersVM
                 {
+                    ReportId = n.Id,
                     User = n.User.UserName,
                     ReportText = n.ReportText,
                     Status = n.Status.ToString(),
@@ -220,6 +269,22 @@ namespace web_blog.Data.Services
                 }).FirstOrDefaultAsync();
 
             return reportedArticle;
+        }
+
+
+        //1 day deleting the reports that looked //
+        public async Task DelTestTimer2()
+        {
+            var lookedReports = await _context.ReportedArticles.Where(n => n.IsDeleted == true).ToListAsync();
+
+            if (lookedReports != null)
+            {
+                foreach (var lookedReport in lookedReports)
+                {
+                    _context.ReportedArticles.Remove(lookedReport);
+                    await _context.SaveChangesAsync();
+                }
+            }
         }
     }
 }

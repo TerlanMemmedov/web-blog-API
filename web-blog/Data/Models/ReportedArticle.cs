@@ -9,10 +9,11 @@ namespace web_blog.Data.Models
     {
         [Key]
         public int Id { get; set; }
-        [Required]
-        public int ArticleId { get; set; }
+
+
+        public int? ArticleId { get; set; }
         [ForeignKey(nameof(ArticleId))]
-        public Article Article { get; set; }
+        public Article? Article { get; set; }
 
         [Required]
         public string ReportText { get; set; }
