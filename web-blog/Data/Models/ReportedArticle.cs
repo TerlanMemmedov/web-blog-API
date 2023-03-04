@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using web_blog.Data.Enums;
 
@@ -26,5 +27,9 @@ namespace web_blog.Data.Models
         //will add 
         //report durumu (enum) qebul edildi, edilmedi, baxilir
         public RStatus Status { get; set; }
+
+
+        [DefaultValue(false)]
+        public bool IsDeleted { get; set; }
     }
 }

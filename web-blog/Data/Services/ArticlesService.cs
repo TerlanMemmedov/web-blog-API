@@ -218,17 +218,63 @@ namespace web_blog.Data.Services
             }
         }
 
-        // Works //Will change to delete the articles and reportes with 
-        // the added column (deleted or not) with timely. 
+        public async Task ChangeToDeleted(int articleId)
+        {
+            var article = await _context.Articles.FirstOrDefaultAsync(n => n.Id == articleId);
+
+            if (article != null)
+            {
+                article.IsDeleted = true;
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<string> GetUserIdThatAuthorOFArticleId(int id)
+        {
+            var article = await _context.Articles.FirstOrDefaultAsync(n => n.Id == id);
+
+            if (article != null)
+            {
+                string UserIdThatAuthor = article.UserId;
+
+                return UserIdThatAuthor;
+            }
+
+            return null;
+        }
+
+
+
+
+
+        // Works //Will change to delete the articles
+        // the added column (deleted or not) with timely.
+        // 1 day
         public async Task DelTestTimer() 
         {
-            var articles = await _context.Articles.Where(n => n.Categories == Categories.Fitness).ToListAsync();
+            var articles = await _context.Articles.Where(n => n.IsDeleted == true).ToListAsync();
 
             if (articles != null)
             {
-                foreach (var article in articles) 
+                foreach (var article in articles)
                 {
                     _context.Articles.Remove(article);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        //1 day deleting the reports that looked //
+        public async Task DelTestTimer2()
+        {
+            var lookedReports = await _context.ReportedArticles.Where(n => n.IsDeleted == true).ToListAsync();
+
+            if (lookedReports != null)
+            {
+                foreach (var lookedReport in lookedReports)
+                {
+                    _context.ReportedArticles.Remove(lookedReport);
                     await _context.SaveChangesAsync();
                 }
             }

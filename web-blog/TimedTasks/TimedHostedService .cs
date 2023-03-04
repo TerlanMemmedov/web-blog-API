@@ -13,6 +13,8 @@ namespace web_blog.TimedTasks
         readonly IServiceScopeFactory _serviceScopeFactory;
         private int executionCount = 0;
         private Timer? _timer = null;
+        private Timer? _timer2 = null;
+        private Timer? _timer3 = null;
 
 
         public TimedHostedService(IConfiguration configuration,
@@ -28,11 +30,18 @@ namespace web_blog.TimedTasks
 
         public Task StartAsync(CancellationToken stoppingToken)
         {
-            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromMinutes(5));
+            //1 day for reported articles and comments
+            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromDays(1));
+
+            //1 day for reportes status
+            _timer2 = new Timer(DoWorkDeleteReportes, null, TimeSpan.Zero, TimeSpan.FromDays(1));
+
+            _timer3 = new Timer(DoWorkBlockUsers, null, TimeSpan.Zero, TimeSpan.FromDays(1));
 
             return Task.CompletedTask;
         }
 
+        //for deleting the reported things 1 day
         private async void DoWork(object? state)
         {
             //var request = new HttpRequestMessage(HttpMethod.Get, "");
@@ -52,15 +61,41 @@ namespace web_blog.TimedTasks
             await service.DelTestTimer();
         }
 
+
+        //for deleting the reportes 1 day
+        private async void DoWorkDeleteReportes(object? state) 
+        {
+            using var scope = _serviceScopeFactory.CreateScope();
+
+            //??? think have to change to the reports-service
+            var service = scope.ServiceProvider.GetRequiredService<ArticlesService>(); 
+
+            await service.DelTestTimer2(); // change
+        }
+
+        private async void DoWorkBlockUsers(object? state)
+        {
+            using var scope = _serviceScopeFactory.CreateScope();
+            var service = scope.ServiceProvider.GetRequiredService<AuthenticationService>();
+
+            await service.BlockUsersAcceptedReportedPlusFive();
+        }
+
         public Task StopAsync(CancellationToken stoppingToken)
         {
             _timer?.Change(Timeout.Infinite, 0);
+
+            _timer2?.Change(Timeout.Infinite, 0);
+
+            _timer3?.Change(Timeout.Infinite, 0);
 
             return Task.CompletedTask;
         }
         public void Dispose()
         {
             _timer?.Dispose();
+            _timer2?.Dispose();
+            _timer3?.Dispose();
         }
 
 
