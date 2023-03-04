@@ -265,19 +265,6 @@ namespace web_blog.Data.Services
             }
         }
 
-        //1 day deleting the reports that looked //
-        public async Task DelTestTimer2()
-        {
-            var lookedReports = await _context.ReportedArticles.Where(n => n.IsDeleted == true).ToListAsync();
-
-            if (lookedReports != null)
-            {
-                foreach (var lookedReport in lookedReports)
-                {
-                    _context.ReportedArticles.Remove(lookedReport);
-                    await _context.SaveChangesAsync();
-                }
-            }
-        }
+       
     }
 }

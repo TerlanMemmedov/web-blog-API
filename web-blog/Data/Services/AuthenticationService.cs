@@ -57,6 +57,50 @@ namespace web_blog.Data.Services
         }
 
 
+        public async Task<List<ApplicationUser>> GetUsers()
+        {
+            var users = await _context.Users.ToListAsync();
+
+            return users;
+        }
+
+        public async Task<ApplicationUser> GetUser(string userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(n => n.Id == userId);
+
+            return user;
+        }
+        
+
+        public async Task BlockUser(string userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(n => n.Id == userId);
+
+            if (user != null)
+            {
+                user.LockoutEnd = DateTime.Now.AddDays(30);
+                user.LockoutEnabled = false;
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task OpenBlockUser(string userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(n => n.Id == userId);
+
+            if (user != null)
+            {
+                user.LockoutEnd = null;
+                user.LockoutEnabled = true;
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+
+
+        //working with Time interval
         //blocks for last reported above 5 and also will open blocks blocked users again
         public async Task BlockUsersAcceptedReportedPlusFive()
         {

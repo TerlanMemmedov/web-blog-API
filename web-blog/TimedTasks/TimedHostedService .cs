@@ -31,10 +31,10 @@ namespace web_blog.TimedTasks
         public Task StartAsync(CancellationToken stoppingToken)
         {
             //1 day for reported articles and comments
-            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromDays(1));
+            _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromDays(3));
 
-            //1 day for reportes status
-            _timer2 = new Timer(DoWorkDeleteReportes, null, TimeSpan.Zero, TimeSpan.FromDays(1));
+            //3 day for reportes status
+            _timer2 = new Timer(DoWorkDeleteReportes, null, TimeSpan.Zero, TimeSpan.FromDays(3));
 
             _timer3 = new Timer(DoWorkBlockUsers, null, TimeSpan.Zero, TimeSpan.FromDays(1));
 
@@ -62,15 +62,14 @@ namespace web_blog.TimedTasks
         }
 
 
-        //for deleting the reportes 1 day
+        //for deleting the reportes 3 day
         private async void DoWorkDeleteReportes(object? state) 
         {
             using var scope = _serviceScopeFactory.CreateScope();
 
-            //??? think have to change to the reports-service
-            var service = scope.ServiceProvider.GetRequiredService<ArticlesService>(); 
+            var service = scope.ServiceProvider.GetRequiredService<ReportedArticlesService>(); 
 
-            await service.DelTestTimer2(); // change
+            await service.DelTestTimer2(); 
         }
 
         private async void DoWorkBlockUsers(object? state)

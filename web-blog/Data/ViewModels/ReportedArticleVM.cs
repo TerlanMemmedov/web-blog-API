@@ -12,6 +12,9 @@ namespace web_blog.Data.ViewModels
     public class ReportedArticlesWithUsersVM 
     {
         [Required]
+        public int ReportId { get; set; }
+
+        [Required]
         [DisplayName("Report Message")]
         public string ReportText { get; set; }
 
@@ -22,7 +25,7 @@ namespace web_blog.Data.ViewModels
         public string Status { get; set; }
 
         [DisplayName("Reported Article")]
-        public ArticleWithAuthorComEmoVM Article { get; set; }
+        public ArticleWithAuthorComEmoVM? Article { get; set; }
     }
 
 }
